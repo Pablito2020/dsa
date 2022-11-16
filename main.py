@@ -31,28 +31,43 @@ def get_dsa_parameters() -> DSA:
     return DSA(L=L, p=p, q=q, g=g, x=x, pub_k=pub_key, priv_key_obj=private_key)
 
 
-dsa_nums: DSA = get_dsa_parameters()
-print("Generated parameters for the DSA signature algorithm.")
-print(f"\tL: {dsa_nums.L}\n\tp: {dsa_nums.p}\n\tq: {dsa_nums.q}\n\tg: {dsa_nums.g}\n\tx: {dsa_nums.x}\n\tpublic key (g^x modp): {dsa_nums.pub_k}")
+def print_dsa_numbers(dsa_nums: DSA):
+    print("Generated parameters for the DSA signature algorithm.")
+    print(f"\tL: {dsa_nums.L}\n\tp: {dsa_nums.p}\n\tq: {dsa_nums.q}\n\tg: {dsa_nums.g}\n\tx: {dsa_nums.x}\n\tpublic key (g^x modp): {dsa_nums.pub_k}")
 
-# Comprova que h = 2
-assert dsa_nums.g == pow(2, (dsa_nums.p - 1) // dsa_nums.q, dsa_nums.p)
-print("Asserted that h = 2!")
 
-# Comprova que la clau pública és: g^x mod p
-assert dsa_nums.pub_k == pow(dsa_nums.g, dsa_nums.x, dsa_nums.p)
-print("Asserted that the public key == g^x mod p!")
+def assert_h_equals_2(dsa_nums: DSA):
+    assert dsa_nums.g == pow(2, (dsa_nums.p - 1) // dsa_nums.q, dsa_nums.p)
+    print("Asserted that h = 2!")
 
-# Signa missatge amb SHA256, calcula V i comprova que V == R
-signature: bytes = dsa_nums.priv_key_obj.sign("Message".encode("utf-8"), SHA256())
-r, s = decode_dss_signature(signature)
-w = pow(s, -1, dsa_nums.q)
-digest = Hash(SHA256())
-digest.update("Message".encode("utf-8"))
-message_bytes_hashed: bytes = digest.finalize()
-message_int_hashed: int = int.from_bytes(message_bytes_hashed, "big")
-a = (message_int_hashed * w) % dsa_nums.q
-b = (r * w) % dsa_nums.q
-v = pow(dsa_nums.g, a + (dsa_nums.x * b), dsa_nums.p) % dsa_nums.q
-assert r == v
-print("Asserted that r == v!")
+
+def assert_pub_key_is_g_pow_x_mod_p(dsa_nums: DSA):
+    assert dsa_nums.pub_k == pow(dsa_nums.g, dsa_nums.x, dsa_nums.p)
+    print("Asserted that the public key == g^x mod p!")
+
+
+def get_hash_of_message(message: str) -> int:
+    digest = Hash(SHA256())
+    digest.update(message.encode("utf-8"))
+    message_bytes_hashed: bytes = digest.finalize()
+    return int.from_bytes(message_bytes_hashed, "big")
+
+
+def assert_v_equals_r(dsa_nums: DSA):
+    signature: bytes = dsa_nums.priv_key_obj.sign("Message".encode("utf-8"), SHA256())
+    r, s = decode_dss_signature(signature)
+    w = pow(s, -1, dsa_nums.q)
+    message_hashed: int = get_hash_of_message("Message")
+    a = (message_hashed * w) % dsa_nums.q
+    b = (r * w) % dsa_nums.q
+    v = pow(dsa_nums.g, a + (dsa_nums.x * b), dsa_nums.p) % dsa_nums.q
+    assert r == v
+    print("Asserted that r == v!")
+
+
+if __name__ == "__main__":
+    dsa_params: DSA = get_dsa_parameters()
+    print_dsa_numbers(dsa_params)
+    assert_h_equals_2(dsa_params)
+    assert_pub_key_is_g_pow_x_mod_p(dsa_params)
+    assert_v_equals_r(dsa_params)
