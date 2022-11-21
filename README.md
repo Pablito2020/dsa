@@ -1,5 +1,5 @@
 <h1 align="center">
-Digital Signature ALgorithm 🔑
+Digital Signature Algorithm 🔑
 </h1>
 
 ## Summary
